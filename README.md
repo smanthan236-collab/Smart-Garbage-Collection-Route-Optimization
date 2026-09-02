@@ -1,1 +1,2 @@
 # Smart-Garbage-Collection-Route-Optimization
+Smart Garbage Collection & Route Optimization is a C++ simulation system that replaces fixed municipal garbage routes with a dynamic, priority-driven model. Using OOP (Bin and Truck classes) and core DSA concepts (priority queues, graph-based routing, greedy algorithms), the system identifies which bins are most urgently full and computes the most efficient collection route in real time — reducing overflow risk and unnecessary travel compared to traditional fixed-route collection.

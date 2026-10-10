@@ -1,0 +1,245 @@
+\documentclass[10pt,a4paper]{article}
+
+% ---------- Packages ----------
+\usepackage[margin=20mm,top=22mm,bottom=20mm]{geometry}
+\usepackage{mathptmx}                 % Times-like font
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{eso-pic}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{needspace}
+\usepackage[most]{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\renewcommand{\arraystretch}{1.25}
+
+% ---------- Colours ----------
+\definecolor{bluebanner}{HTML}{006699}
+\definecolor{gold}{HTML}{FFC72C}
+\definecolor{headblue}{HTML}{2A5C99}
+\definecolor{hintgrey}{HTML}{777777}
+\definecolor{tablehead}{HTML}{E8EEF5}
+
+% ---------- Header / footer ----------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small PROJECT BASED LEARNING -- II (TCS-551)}
+\fancyhead[R]{\small PHASE-II PROJECT PROGRESS}
+\fancyfoot[R]{\small Page \thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+% gold bar at the bottom of every page
+\AddToShipoutPictureBG{%
+  \AtPageLowerLeft{\color{gold}\rule{\paperwidth}{3mm}}}
+
+% ---------- Helper commands ----------
+% Blue section banner
+\newcommand{\banner}[1]{%
+  \begin{tcolorbox}[colback=bluebanner,colframe=bluebanner,boxrule=0pt,arc=0pt,
+    left=3pt,right=3pt,top=3pt,bottom=3pt]
+    {\bfseries\Large\color{gold}#1}
+  \end{tcolorbox}}
+
+% Section heading + grey hint line
+\newcommand{\sectionhead}[2]{%
+  \needspace{8\baselineskip}
+  \vspace{6pt}
+  {\Large\color{headblue}#1}\\[-2pt]
+  {\small\color{hintgrey}#2}\par\vspace{2pt}}
+
+% Bordered answer box
+\newtcolorbox{answerbox}{colback=white,colframe=black!70,boxrule=0.5pt,arc=0pt,
+  left=5pt,right=5pt,top=4pt,bottom=4pt,breakable}
+
+% Member photo: uses memberN.png if present, otherwise a placeholder frame
+\newcommand{\memberphoto}[1]{%
+  \IfFileExists{member#1.png}%
+    {\includegraphics[height=27mm]{member#1.png}}%
+    {\fbox{\parbox[c][14mm][c]{30mm}{\small\centering member#1.png\\(insert photo)}}}}
+
+% Table styling helpers
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\hrow}{\rowcolor{tablehead}}
+\usepackage{colortbl}
+
+% ======================================================
+\begin{document}
+
+% ---------------- PAGE 1 ----------------
+\includegraphics[width=95mm]{geulogo.png}
+
+\vspace{8mm}
+\banner{PROJECT AND TEAM INFORMATION}
+
+\sectionhead{Project Title}{(Try to choose a catchy title. Max 20 words).}
+\begin{answerbox}
+\textbf{Smart Garbage Collection Route Optimization: Dynamic Bin Prioritization and Truck Routing in C++}
+\end{answerbox}
+
+\vspace{4mm}
+\noindent
+\begin{tabular}{|L{0.52\textwidth}|L{0.40\textwidth}|}
+\hline
+\textit{Team Name:}\newline \textit{Team \#} & \textit{Avengers} \\ \hline
+\textbf{Team member 1 (Team Lead)}\newline
+\textit{(Last Name, name: student ID: email, picture):} &
+\textit{Singh, Manthan -- 2510350070}\newline
+\textit{smanthan236@gmail.com}\newline \memberphoto{1} \\ \hline
+\textbf{Team member 2}\newline
+\textit{(Last Name, name: student ID: email, picture):} &
+\textit{Rana, Aryan -- 2510350073}\newline
+\textit{aryanrana811@gmail.com}\newline \memberphoto{2} \\ \hline
+\textbf{Team member 3}\newline
+\textit{(Last Name, name: student ID: email, picture):} &
+\textit{Singh, Shaurya Pratap -- 2510011689}\newline
+\textit{shauryapratapsingh@gmail.com}\newline \memberphoto{3} \\ \hline
+\textbf{Team member 4}\newline
+\textit{(Last Name, name: student ID: email, picture):} &
+\textit{Hritambra -- 2510380105}\newline
+\textit{riturawat442@gmail.com}\newline \memberphoto{4} \\ \hline
+\end{tabular}
+
+\newpage
+
+% ---------------- PAGE 2 ----------------
+\banner{PHASE-II PROJECT PROGRESS DESCRIPTION (35 pts)}
+
+\sectionhead{Project Abstract (2 pts)}{(Brief restatement of your project's main goal. Max 300 words).}
+\begin{answerbox}
+Municipal waste collection still depends on fixed daily or alternate-day routes, so trucks visit nearly empty bins while others overflow. This is a serious problem in Indian cities such as Dehradun, which generates about 350 tonnes of waste per day but can transport only a part of it. Our project builds a C++ simulation system that models a set of garbage bins with simulated fill-level data (random or CSV input, standing in for IoT sensors). The system automatically identifies urgent bins using a fill threshold, ranks them in a max-heap priority queue, and computes an efficient collection route for a single truck with limited capacity. When the truck is full it returns to the depot and then continues collecting. The final goal is to show with numbers (total distance travelled, bins collected, bins prevented from overflowing, truck capacity utilisation) that this dynamic approach beats a fixed-route baseline. The design stays open to future integration with real sensors, so it fills the gap left by costly, hardware-dependent commercial systems such as Bigbelly, Sensoneo and Ecube Labs.
+\end{answerbox}
+
+\sectionhead{Updated Project Approach and Architecture (2 pts)}{(Describe your current approach, including system design, communication protocols, libraries used, etc. Max 300 words).}
+\begin{answerbox}
+The system is written in C++ using Object-Oriented Programming and STL data structures. Three core classes are implemented: \textbf{Bin} (id, x/y coordinates, fill percentage, capacity), \textbf{Truck} (current position, capacity, current load, assigned route) and \textbf{Graph} (bins and depot as nodes, weighted edges for road distance).
+
+The pipeline has five modules. (1) A \textbf{Data Input Layer} generates fill levels by random simulation or reads them from a CSV file. (2) The \textbf{Priority Module} applies a threshold (70\% fill) and pushes urgent bins into a \texttt{std::priority\_queue} (max-heap by fill percentage), giving $O(\log n)$ insertion and extraction. (3) The \textbf{Route Optimizer} uses a greedy nearest-neighbour search from the truck's current position with Euclidean distance; Dijkstra's algorithm, $O((V+E)\log V)$, on the road graph is being added as an extension. (4) A \textbf{capacity check} sends the truck back to the depot when full and then resumes the route. (5) The \textbf{Output Display} prints bin status, the chosen route and statistics to the console and logs them to a file.
+
+The truck's updated position and load feed back into the Priority Module so system state stays current. Modules communicate through method calls on shared objects; no network protocol is needed because no physical hardware is used. Libraries: C++ STL (vector, priority\_queue, queue, cmath, fstream, random, iomanip). Tools: g++ (C++17), Git/GitHub and CSV sample data.
+\end{answerbox}
+
+\sectionhead{Tasks Completed (7 pts)}{(Describe the main tasks that have been assigned and already completed. Max 250 words).}
+\noindent
+\begin{tabularx}{\textwidth}{|X|L{0.30\textwidth}|}
+\hline
+\hrow \textbf{Task Completed} & \textbf{Team Member} \\ \hline
+Designed Bin and Truck classes with encapsulation; constructors, getters and setters (Milestone 1) & Singh, Manthan \\ \hline
+Built random and CSV-based fill-level data generator for the Data Input Layer (Milestone 1) & Rana, Aryan \\ \hline
+Implemented threshold filtering and max-heap priority queue to rank urgent bins (Milestone 2) & Singh, Shaurya Pratap \\ \hline
+Implemented Graph structure and greedy nearest-neighbour routing from the truck's position (Milestone 3) & Singh, Manthan and Hritambra \\ \hline
+Implemented truck capacity limit and return-to-depot logic (Milestone 4, core logic done) & Hritambra \\ \hline
+Implemented fixed-route baseline for comparison and started console output of bin status & Rana, Aryan \\ \hline
+Set up GitHub repository, folder structure, build instructions and initial README & Singh, Shaurya Pratap \\ \hline
+\end{tabularx}
+
+
+
+% ---------------- PAGE 3 ----------------
+\sectionhead{Challenges/Roadblocks (7 pts)}{(Describe the challenges that you have faced or are facing so far and how you plan to solve them. Max 300 words).}
+\begin{answerbox}
+\textbf{1. No real sensor hardware.} IoT sensors are unavailable, so fill data is simulated. We built a modular input layer (random, CSV or manual entry) so real sensor feeds can replace it later without changing other modules.
+
+\textbf{2. Realistic simulation data.} Purely random fill levels do not behave like real waste accumulation. We plan to add per-bin fill rates (for example higher for market areas) and run multi-day simulations.
+
+\textbf{3. Greedy routing is not optimal.} Nearest-neighbour can give longer routes than the best tour. We compare it with the fixed-route baseline on many datasets, will add Dijkstra shortest paths on the road graph, and will state this limitation in the report.
+
+\textbf{4. Capacity and depot-return edge cases.} A bin that does not fit the remaining capacity, or several consecutive full trips, caused logic bugs. We are fixing these with boundary test cases (exactly full, empty truck, no urgent bins).
+
+\textbf{5. Fair comparison with the baseline.} Both methods must use identical data and truck capacity. We use a fixed random seed so results are reproducible.
+
+\textbf{6. Time management.} Coordinating four members around exams and other courses was difficult. We now hold short weekly meetings and track tasks as GitHub issues.
+\end{answerbox}
+
+\sectionhead{Tasks Pending (7 pts)}{(Describe the main tasks that you still need to complete. Max 250 words).}
+\noindent
+\begin{tabularx}{\textwidth}{|X|L{0.30\textwidth}|}
+\hline
+\hrow \textbf{Task Pending} & \textbf{Team Member (to complete the task)} \\ \hline
+Add Dijkstra shortest-path distance on the road graph as an alternative to Euclidean distance & Singh, Manthan \\ \hline
+Finish console output: bin status table, chosen route, per-trip load and capacity usage & Rana, Aryan \\ \hline
+Complete before/after comparison module (distance saved, bins prevented from overflowing, truck utilisation) & Hritambra \\ \hline
+Multi-day / changing fill-level simulation to show real-time response & Rana, Aryan \\ \hline
+Full testing: unit tests, edge cases, performance with 50, 100 and 500 bins & Singh, Shaurya Pratap \\ \hline
+Complexity analysis of priority queue, Dijkstra and greedy routing for the report & Singh, Shaurya Pratap and Hritambra \\ \hline
+Final README, code comments and documentation & Singh, Shaurya Pratap \\ \hline
+Final report and demonstration / presentation & All members (led by Singh, Manthan) \\ \hline
+\end{tabularx}
+
+\sectionhead{Project Outcome/Deliverables (2 pts)}{(Describe what are the key outcomes / deliverables of the project. Max 200 words).}
+\begin{answerbox}
+\begin{enumerate}[leftmargin=*,itemsep=2pt,topsep=0pt]
+\item A working C++ console application that prioritises bins by fill level and generates a capacity-aware collection route for a truck.
+\item Clean OOP code with Bin, Truck and Graph classes (encapsulation, modularity, STL usage).
+\item A quantified comparison report showing distance, fuel and time saved and overflow events avoided versus a fixed-route baseline, benchmarked against published pilot results (around 30\% reduction in studies such as the Lahore pilot).
+\item Source code, README and a final report with complexity analysis (priority queue $O(\log n)$, Dijkstra $O((V+E)\log V)$, greedy routing).
+\item A short demo showing the system responding to changing bin fill levels.
+\end{enumerate}
+\end{answerbox}
+
+
+
+% ---------------- PAGE 4 ----------------
+\sectionhead{Progress Overview (2 pts)}{(Summarize how much of the project is done, what's behind schedule, what's ahead of schedule. Max 200 words.)}
+\begin{answerbox}
+About \textbf{55\%} of the project is complete. Milestones 1, 2 and 3 (classes, data simulation, priority queue, greedy routing) are finished, Milestone 4 (capacity and depot return) has working core logic and is being tested, and Milestone 5 (output and comparison) has started. Milestone 6 (testing, documentation, report, demo) has only begun with the repository and README setup.
+
+\textbf{Ahead of schedule:} priority queue and threshold filtering.
+
+\textbf{On schedule:} class design, data input and basic routing.
+
+\textbf{Slightly behind:} Dijkstra extension and the full comparison module, because capacity edge cases took longer than expected; we plan to recover this in the coming weeks.
+\end{answerbox}
+
+\sectionhead{Codebase Information (2 pts)}{(Repository link, branch, and information about important commits.)}
+\begin{answerbox}
+\textbf{Repository link:} [paste GitHub repository URL here]
+
+\textbf{Branch:} main (stable code), dev (feature work)
+
+\textbf{Important commits:} initial project structure and Bin/Truck classes; random and CSV data generator; threshold filter and max-heap priority queue; nearest-neighbour routing and Graph class; truck capacity and depot-return logic; fixed-route baseline and console output started. [replace with your actual commit messages / hashes]
+\end{answerbox}
+
+\sectionhead{Testing and Validation Status (2 pts)}{(Provide information about any tests conducted)}
+\noindent
+\begin{tabularx}{\textwidth}{|L{0.28\textwidth}|L{0.16\textwidth}|X|}
+\hline
+\hrow \textbf{Test Type} & \textbf{Status (Pass/Fail)} & \textbf{Notes} \\ \hline
+Unit test: Bin and Truck methods & Pass & Fill level stays within 0--100\%; load never exceeds capacity \\ \hline
+Priority queue ordering & Pass & Bins extracted in descending fill percentage \\ \hline
+Threshold filtering (70\%) & Pass & Only bins at or above the threshold enter the queue \\ \hline
+Greedy nearest-neighbour route & Pass & Always visits the closest unvisited urgent bin; checked on small hand-calculated maps \\ \hline
+Capacity and depot-return logic & In progress & Basic case passes; boundary cases (exactly full, oversized bin) being fixed \\ \hline
+CSV input parsing & Pass & Valid files handled; error handling for malformed rows pending \\ \hline
+Dynamic vs fixed-route comparison & In progress & Initial runs show shorter distance for dynamic routing; larger datasets pending \\ \hline
+Dijkstra shortest path & Pending & Not yet implemented \\ \hline
+Performance test (many bins) & Pending & Planned for next phase \\ \hline
+\end{tabularx}
+
+
+
+% ---------------- PAGE 5 ----------------
+\sectionhead{Deliverables Progress (2 pts)}{(Summarize the current status of all key project deliverables mentioned earlier. Indicate whether each deliverable is completed, in progress, or pending.)}
+\noindent
+\begin{tabularx}{\textwidth}{|X|L{0.36\textwidth}|}
+\hline
+\hrow \textbf{Deliverable} & \textbf{Status} \\ \hline
+Bin, Truck and Graph classes & Completed (Graph extensions in progress) \\ \hline
+Bin data simulation (random / CSV) & Completed \\ \hline
+Priority queue and threshold filtering & Completed \\ \hline
+Greedy nearest-neighbour route optimizer & Completed \\ \hline
+Capacity limit and depot return & In progress \\ \hline
+Console output (bin status, route, statistics) & In progress \\ \hline
+Fixed-route vs dynamic comparison report & In progress \\ \hline
+Dijkstra-based routing extension & Pending \\ \hline
+README and source documentation & In progress \\ \hline
+Complexity analysis and final report & Pending \\ \hline
+Demo / presentation & Pending \\ \hline
+\end{tabularx}
+
+\end{document}

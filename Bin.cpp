@@ -13,6 +13,7 @@ Bin::Bin(int id, int nodeId, std::string location, double fillLevel,
     setFillLevel(fillLevel);
 }
 
+
 int Bin::getId() const { return id_; }
 int Bin::getNodeId() const { return nodeId_; }
 const std::string& Bin::getLocation() const { return location_; }
@@ -33,3 +34,4 @@ void Bin::setFillLevel(double fillLevel) {
 }
 
 void Bin::setCollected(bool collected) { collected_ = collected; }
+//binid

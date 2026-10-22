@@ -29,4 +29,4 @@ private:
     bool collected_;
 };
 
-#endif // BIN_H
+#endif // BIN_HH

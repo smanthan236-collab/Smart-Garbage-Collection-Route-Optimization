@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
-include <string>
+#include <string>
 
 DatabaseManager::DatabaseManager(const std::string& filename) : db_(nullptr) {
     const int result = sqlite3_open(filename.c_str(), &db_);

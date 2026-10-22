@@ -14,7 +14,7 @@ struct Road {
 
 class DatabaseManager;
 
-// CSV is used for initial seed data; SQLite stores the imported records.
+// CSV is used for initial seed data; SQLite stores the imported record.
 class CSVManager {
 public:
     static bool importBins(const std::string& filename, DatabaseManager& db);

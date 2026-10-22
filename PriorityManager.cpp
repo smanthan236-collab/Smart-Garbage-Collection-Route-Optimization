@@ -1,4 +1,4 @@
-include "PriorityManager.h"
+#include "PriorityManager.h"
 
 PriorityManager::PriorityManager(int initialCapacity)
     : queue_(pq_create(initialCapacity > 0 ? initialCapacity : 1)) {}

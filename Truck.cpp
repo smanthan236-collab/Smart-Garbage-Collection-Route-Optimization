@@ -29,5 +29,5 @@ bool Truck::assignBin(int binId, double wasteKg) {
 
     assignedBins_.push_back(binId);
     currentLoadKg_ += wasteKg;
-    return true;
+    return true
 }

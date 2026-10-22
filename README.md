@@ -169,5 +169,3 @@ SQLite file `database/garbage.db` with five tables: `bins`, `trucks`, `roads`, `
 ## Author
 
 Manthan Singh - Graphic Era
-
-_Add team members, guide/faculty name and license here._

@@ -11,7 +11,7 @@ public:
     void setDistance(double distanceKm);
     void setLoad(double loadKg);
 
-    int getTruckId() const;
+    int getTruckId() cons;
     const std::vector<int>& getNodes() const;
     double getDistance() const;
     double getLoad() const;

@@ -263,7 +263,7 @@ bool CollectionManager::collectAssigned() {
             }
         }
     }
-    reload();
+    r();
     return collectedAny;
 }
 

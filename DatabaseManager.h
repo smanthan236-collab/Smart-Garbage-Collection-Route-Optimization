@@ -38,6 +38,7 @@ public:
                    double distanceKm, double loadKg);
     bool recordCollection(int truckId, int binId, double amountKg);
 
+    //contant
     bool hasBins() const;
     bool hasTrucks() const;
     bool hasRoads() const;

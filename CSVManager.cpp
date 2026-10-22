@@ -123,4 +123,4 @@ bool CSVManager::importRoads(const std::string& filename, DatabaseManager& db) {
         }
     }
     return !input.bad();
-}
+

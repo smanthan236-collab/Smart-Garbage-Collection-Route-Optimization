@@ -10,4 +10,4 @@ int shortestPath(Graph *graph,
                  int *pathLength,
                  int *totalDistance);
 
-#end
+#endif

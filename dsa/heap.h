@@ -1,4 +1,4 @@
-#ifndef HEAP_H
+ifndef HEAP_H
 #define HEAP_H
 
 #define MAX_BINS 100

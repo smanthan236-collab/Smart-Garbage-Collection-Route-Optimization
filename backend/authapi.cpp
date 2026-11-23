@@ -84,7 +84,12 @@ void registerAuthRoutes(
                 return;
             }
 
-            
+            string role = data["role"].get<string>();
+            string name = data["name"].get<string>();
+            string email = data["email"].get<string>();
+            string phone = data["phone"].get<string>();
+            string password = data["password"].get<string>();
+
             // AuthManager allows only citizen and driver
             AuthResult result = auth.registerAccount(
                 role,

@@ -74,26 +74,4 @@ public:
         return true;
     }
 
-    void unloadGarbage()
-    {
-        currentLoad = 0;
-        assignedBinID = "";
-        status = "Available";
-    }
 
-    void setLocation(int location)
-    {
-        currentLocation = location;
-    }
-
-    void displayTruck()
-    {
-        cout << truckID
-             << " | Load: " << currentLoad
-             << "/" << maxCapacity
-             << " kg | Remaining: " << getRemainingCapacity()
-             << " kg | Status: " << status << endl;
-    }
-};
-
-#endif

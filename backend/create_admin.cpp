@@ -90,18 +90,21 @@ int main()
         password
     );
 
-    auth.close();
-
-    if (success)
+bool AuthManager::updateProfile(
+    int accountID,
+    const string& name,
+    const string& email,
+    const string& phone,
+    string& errorMessage)
+{
+    if (db == NULL || accountID <= 0)
     {
-        cout << "\nAdmin account created successfully!\n";
-        cout << "You can now use Admin Login.\n";
-    }
-    else
-    {
-        cout << "\nAdmin account could not be created.\n";
-        cout << "Check the details or whether an Admin already exists.\n";
+        errorMessage = "Invalid account.";
+        return false;
     }
 
-    return success ? 0 : 1;
-}
+    if (name.empty() || email.empty() || !validPhone(phone))
+    {
+        errorMessage = "Please enter valid profile details.";
+        return false;
+    }

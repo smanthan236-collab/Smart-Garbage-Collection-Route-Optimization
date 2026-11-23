@@ -47,12 +47,7 @@ server.new_task_queue = [] {
 
     // Allow communication from the browser frontend
   // Allow communication from the browser frontend
-server.set_default_headers({
-    {"Access-Control-Allow-Origin", "*"},
-    {"Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"},
-    {"Access-Control-Allow-Headers", "Content-Type, Authorization"}
-});
-
+server.set_default_headers
     // Handle browser preflight requests
     server.Options(R"(/api/.*)",
         [](const httplib::Request& req,

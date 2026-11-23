@@ -65,6 +65,17 @@ int main()
 
     // Demonstrate completed collection
      //  manager.completeCollection("B104");
+    
+  // Show updated application status
+    cout << "\n--- UPDATED SYSTEM STATUS ---\n";
 
+    manager.displayBins();
+    manager.displayTrucks();
+
+    // Clean up
+    freeGraph(&graph);
+    database.close();
+
+    return 0;
   
 }

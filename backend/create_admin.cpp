@@ -90,21 +90,3 @@ int main()
         password
     );
 
-bool AuthManager::updateProfile(
-    int accountID,
-    const string& name,
-    const string& email,
-    const string& phone,
-    string& errorMessage)
-{
-    if (db == NULL || accountID <= 0)
-    {
-        errorMessage = "Invalid account.";
-        return false;
-    }
-
-    if (name.empty() || email.empty() || !validPhone(phone))
-    {
-        errorMessage = "Please enter valid profile details.";
-        return false;
-    }

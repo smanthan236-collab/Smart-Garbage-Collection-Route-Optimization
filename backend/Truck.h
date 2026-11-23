@@ -66,7 +66,7 @@ public:
         currentLocation = binLocation;
         assignedBinID = "";
 
-        if (currentLoad >= maxCapacity * 0.90f)
+        if (currentLoad >= maxCapacity * 0.99f)
             status = "NeedsDepot";
         else
             status = "Available";

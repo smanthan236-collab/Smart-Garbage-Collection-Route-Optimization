@@ -112,6 +112,29 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="fillPercentage">Bin Fill Percentage *</label>
+                    <input
+                        type="number"
+                        id="fillPercentage"
+                        min="0"
+                        max="100"
+                        step="1"
+                        placeholder="Enter fill percentage (0-100)"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="garbageType">Garbage Quality *</label>
+                    <select id="garbageType" required>
+                        <option value="">Select garbage quality</option>
+                        <option value="Dry">Dry</option>
+                        <option value="Wet">Wet</option>
+                        <option value="Mixed">Mixed</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label for="issueType">Issue Type *</label>
                     <select id="issueType" required>
                         <option value="">Select an issue</option>

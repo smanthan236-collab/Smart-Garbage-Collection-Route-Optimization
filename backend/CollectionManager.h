@@ -93,8 +93,9 @@ public:
             trucks[i].displayTruck();
     }
 
-    void optimizeCollection()
+    int optimizeCollection()
     {
+        int assignmentsMade = 0;
         MaxHeap heap;
         initializeHeap(&heap);
 
@@ -225,11 +226,15 @@ float requiredGarbage =
 
     cout << "Shortest Distance: "
          << shortestDistance << " km\n";
+
+    assignmentsMade++;
 }
         }
+
+        return assignmentsMade;
     }
 
-    void completeCollection(string binID)
+    bool completeCollection(string binID)
     {
         for (int i = 0; i < trucks.size(); i++)
         {
@@ -242,15 +247,15 @@ float requiredGarbage =
                     continue;
 
                 float garbage = bins[j].getEstimatedGarbage();
+                float newLoad = trucks[i].getCurrentLoad() + garbage;
 
-                float newLoad =
-                    trucks[i].getCurrentLoad() + garbage;
+                if (garbage <= 0 || !trucks[i].canCollect(garbage))
+                    return false;
 
                 string newStatus =
-                    (newLoad >= trucks[i].getMaxCapacity() * 0.90f)
+                    (newLoad >= trucks[i].getMaxCapacity() * 0.99f)
                     ? "NeedsDepot" : "Available";
 
-                // Save collection to SQLite first
                 bool saved = database->recordCollection(
                     binID,
                     trucks[i].getID(),
@@ -261,45 +266,32 @@ float requiredGarbage =
                 );
 
                 if (!saved)
-                {
-                    cout << "Database update failed! "
-                         << "Collection not completed.\n";
-                    return;
-                }
+                    return false;
 
-                // Update C++ objects
                 bool success = trucks[i].completeCollection(
-                    binID,
-                    garbage,
-                    bins[j].getLocationNode()
+                    binID, garbage, bins[j].getLocationNode()
                 );
 
-               if (!success)
-{
-    cout << "Collection failed in truck system!\n";
-    return;
-}
+                if (!success)
+                    return false;
 
-bins[j].collectGarbage();
+                bins[j].collectGarbage();
 
-cout << "\nCollection Completed!\n";
-cout << "Bin: " << binID << endl;
-cout << "Truck: " << trucks[i].getID() << endl;
-cout << "Garbage Collected: " << garbage << " kg\n";
-cout << "Database updated successfully!\n";
+                cout << "\\nCollection Completed!\\n";
+                cout << "Bin: " << binID << endl;
+                cout << "Truck: " << trucks[i].getID() << endl;
+                cout << "Garbage Collected: " << garbage << " kg\\n";
 
-if (trucks[i].getStatus() == "NeedsDepot")
-{
-    sendTruckToNearestDepot(i);
-}
+                if (trucks[i].getStatus() == "NeedsDepot")
+                    sendTruckToNearestDepot(i);
 
-
-                return;
+                return true;
             }
         }
 
-        cout << "No matching assignment found!\n";
+        return false;
     }
+
 void sendTruckToNearestDepot(int truckIndex)
 {
     if (truckIndex < 0 || truckIndex >= trucks.size())

@@ -511,6 +511,46 @@ bool Database::recordCollection(string binID,
 
     return success;
 }
+
+bool Database::loadDepots(vector<Depot> &depots)
+{
+    const char *sql =
+        "SELECT depot_id, depot_name, location_node FROM depots;";
+
+    sqlite3_stmt *statement = NULL;
+
+    if (sqlite3_prepare_v2(db, sql, -1,
+                           &statement, NULL) != SQLITE_OK)
+        return false;
+
+    depots.clear();
+
+    int result;
+
+    while ((result = sqlite3_step(statement)) == SQLITE_ROW)
+    {
+        const unsigned char *idText =
+            sqlite3_column_text(statement, 0);
+
+        const unsigned char *nameText =
+            sqlite3_column_text(statement, 1);
+
+        string id = idText ?
+            reinterpret_cast<const char *>(idText) : "";
+
+        string name = nameText ?
+            reinterpret_cast<const char *>(nameText) : "";
+
+        int location = sqlite3_column_int(statement, 2);
+
+        depots.push_back(Depot(id, name, location));
+    }
+
+    sqlite3_finalize(statement);
+
+    return result == SQLITE_DONE;
+}
+
 bool Database::loadActiveAssignments(vector<Truck> &trucks)
 {
     const char *sql =
@@ -972,6 +1012,108 @@ bool Database::addComplaint(
     sqlite3_finalize(statement);
 
     return success;
+}
+
+
+// Save citizen complaint and update bin report in one transaction
+bool Database::addCitizenReport(
+    string binID,
+    string citizenName,
+    string citizenPhone,
+    string issueType,
+    string description,
+    float fillPercentage,
+    string garbageType)
+{
+    if (db == NULL || binID.empty() ||
+        citizenName.empty() || issueType.empty() ||
+        description.empty() || citizenPhone.size() != 10 ||
+        fillPercentage < 0 || fillPercentage > 100)
+        return false;
+
+    for (char digit : citizenPhone)
+    {
+        if (digit < '0' || digit > '9')
+            return false;
+    }
+
+    if (garbageType != "Dry" &&
+        garbageType != "Wet" &&
+        garbageType != "Mixed")
+        return false;
+
+    if (sqlite3_exec(db, "BEGIN IMMEDIATE;", NULL, NULL, NULL) != SQLITE_OK)
+        return false;
+
+    const char *updateSQL =
+        "UPDATE bins SET fill_percentage = ?, garbage_type = ?, "
+        "updated_at = CURRENT_TIMESTAMP WHERE bin_id = ?;";
+
+    sqlite3_stmt *updateStatement = NULL;
+
+    if (sqlite3_prepare_v2(db, updateSQL, -1,
+                           &updateStatement, NULL) != SQLITE_OK)
+    {
+        sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+        return false;
+    }
+
+    sqlite3_bind_double(updateStatement, 1, fillPercentage);
+    sqlite3_bind_text(updateStatement, 2, garbageType.c_str(),
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(updateStatement, 3, binID.c_str(),
+                      -1, SQLITE_TRANSIENT);
+
+    bool binUpdated =
+        sqlite3_step(updateStatement) == SQLITE_DONE &&
+        sqlite3_changes(db) > 0;
+
+    sqlite3_finalize(updateStatement);
+
+    if (!binUpdated)
+    {
+        sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+        return false;
+    }
+
+    const char *insertSQL =
+        "INSERT INTO complaints "
+        "(bin_id, description, status, citizen_name, citizen_phone, issue_type) "
+        "VALUES (?, ?, 'Pending', ?, ?, ?);";
+
+    sqlite3_stmt *insertStatement = NULL;
+
+    if (sqlite3_prepare_v2(db, insertSQL, -1,
+                           &insertStatement, NULL) != SQLITE_OK)
+    {
+        sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+        return false;
+    }
+
+    sqlite3_bind_text(insertStatement, 1, binID.c_str(),
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(insertStatement, 2, description.c_str(),
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(insertStatement, 3, citizenName.c_str(),
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(insertStatement, 4, citizenPhone.c_str(),
+                      -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(insertStatement, 5, issueType.c_str(),
+                      -1, SQLITE_TRANSIENT);
+
+    bool complaintSaved =
+        sqlite3_step(insertStatement) == SQLITE_DONE;
+
+    sqlite3_finalize(insertStatement);
+
+    if (!complaintSaved ||
+        sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK)
+    {
+        sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+        return false;
+    }
+
+    return true;
 }
 
 

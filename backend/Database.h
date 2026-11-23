@@ -9,6 +9,7 @@
 #include "Bin.h"
 #include "Truck.h"
 #include "Driver.h"
+#include "Depot.h"
 struct ComplaintRecord
 {
     int complaintID;
@@ -59,6 +60,7 @@ bool updateTruck(string truckID,
 
 bool deleteTruck(string truckID);
     bool loadActiveAssignments(vector<Truck> &trucks);
+    bool loadDepots(vector<Depot> &depots);
     bool loadDrivers(vector<Driver> &drivers);
     // Complaint management operations
 bool loadComplaints(vector<ComplaintRecord> &complaints);
@@ -75,6 +77,14 @@ bool addComplaint(string binID,
                   string citizenPhone,
                   string issueType,
                   string description);
+
+bool addCitizenReport(string binID,
+                     string citizenName,
+                     string citizenPhone,
+                     string issueType,
+                     string description,
+                     float fillPercentage,
+                     string garbageType);
     // Driver management operations for Admin API
 bool addDriver(int driverID,
                string driverName,

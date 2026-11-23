@@ -1,11 +1,16 @@
 
-const API_URL = "http://localhost:8080/api";
+const API_URL = "http" + "://localhost:8080/api";
+
 
 async function refreshAssignment() {
     const driverID = sessionStorage.getItem("smartwasteDriverId");
 
     const content = document.getElementById("assignmentContent");
     const message = document.getElementById("assignmentMessage");
+    const completeButton = document.getElementById("completeCollectionButton");
+    const actionMessage = document.getElementById("collectionActionMessage");
+
+    if (completeButton) completeButton.disabled = true;
 
     if (!driverID) {
         content.innerHTML = `
@@ -39,6 +44,7 @@ async function refreshAssignment() {
             data.truck ? data.truck.id : "--";
 
         if (!data.assigned) {
+            if (completeButton) completeButton.disabled = true;
             document.getElementById("assignedBinStat").textContent = "--";
             document.getElementById("binFillStat").textContent = "--";
             document.getElementById("garbageTypeStat").textContent = "--";
@@ -55,6 +61,52 @@ async function refreshAssignment() {
         }
 
         const bin = data.assignment;
+
+        if (completeButton) {
+            completeButton.disabled = false;
+
+            completeButton.onclick = async function () {
+                const confirmed = window.confirm(
+                    "Confirm garbage from " + bin.binId +
+                    " has actually been collected? This updates the database."
+                );
+
+                if (!confirmed) return;
+
+                completeButton.disabled = true;
+                completeButton.textContent = "Saving Collection...";
+
+                try {
+                    const result = await fetch(
+                        API_URL + "/driver/" +
+                        encodeURIComponent(driverID) + "/complete",
+                        { method: "POST" }
+                    );
+
+                    const resultData = await result.json();
+
+                    if (!result.ok || !resultData.success)
+                        throw new Error(resultData.message || "Collection failed.");
+
+                    if (actionMessage)
+                        actionMessage.textContent = resultData.message;
+
+                    await refreshAssignment();
+                } catch (error) {
+                    if (actionMessage)
+                        actionMessage.textContent = error.message;
+
+                    completeButton.disabled = false;
+                } finally {
+                    completeButton.textContent = "Mark Collection Complete";
+                }
+            };
+        }
+
+        const route = Array.isArray(bin.route)
+            ? bin.route.map(String).join(" → ")
+            : "Unavailable";
+        const distance = Number(bin.distanceKm);
 
         document.getElementById("assignedBinStat").textContent =
             bin.binId;
@@ -94,6 +146,20 @@ async function refreshAssignment() {
 
             </div>
 
+            <div class="assignment-task-grid" style="margin-top:16px">
+                <div class="assignment-task-item">
+                    <span>Shortest Route</span>
+                    <strong>${escapeHTML(route)}</strong>
+                    <small>Calculated using Dijkstra's algorithm</small>
+                </div>
+                <div class="assignment-task-item">
+                    <span>Travel Distance</span>
+                    <strong>${Number.isFinite(distance) && distance >= 0
+                        ? distance.toFixed(1) + " km"
+                        : "Unavailable"}</strong>
+                    <small>Shortest road-network distance</small>
+                </div>
+            </div>
             <div class="progress-heading" style="margin-top:22px">
                 <span>Bin Fill Level</span>
                 <strong>${Number(bin.fill).toFixed(1)}%</strong>

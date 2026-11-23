@@ -1,5 +1,5 @@
 
-const API_URL = "http://localhost:8080/api";
+const API_URL = "http" + "://localhost:8080/api";
 
 // Fetch data from the C++ API
 async function fetchDashboardData(endpoint) {
@@ -26,7 +26,7 @@ function getDashboardTruckStatus(truck) {
     const capacity = Number(truck.capacity) || 0;
     const load = Number(truck.load) || 0;
 
-    if (capacity > 0 && load >= capacity * 0.90) {
+    if (capacity > 0 && load >= capacity * 0.99) {
         return "NeedsDepot";
     }
 
@@ -256,3 +256,46 @@ renderDashboard();
 
 // Refresh data when returning to Dashboard
 window.addEventListener("focus", renderDashboard);
+
+
+// Run the SmartWaste collection optimizer
+async function runSmartOptimization() {
+    const button = document.getElementById("runOptimizerBtn");
+    const message = document.getElementById("optimizerMessage");
+
+    button.disabled = true;
+    button.textContent = "Optimizing...";
+
+    try {
+        const response = await fetch(API_URL + "/optimize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({})
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || "Optimization failed.");
+        }
+
+        message.textContent =
+            result.message ||
+            ("Optimization completed. New assignments: " +
+             Number(result.assignmentsCreated || 0));
+
+        await renderDashboard();
+
+    } catch (error) {
+        console.error("Optimization error:", error);
+        message.textContent = "Optimization failed: " + error.message;
+    } finally {
+        button.disabled = false;
+        button.textContent = "Run Smart Optimization";
+    }
+}
+
+document.getElementById("runOptimizerBtn").addEventListener(
+    "click",
+    runSmartOptimization
+);

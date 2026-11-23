@@ -8,6 +8,7 @@
 
 #include "Database.h"
 #include "Bin.h"
+#include "CollectionManager.h"
 #include "authapi.h"
 
 using namespace std;
@@ -932,7 +933,9 @@ server.Delete(R"(/api/trucks/([^/]+))",
                 !data.contains("citizen") ||
                 !data.contains("phone") ||
                 !data.contains("issue") ||
-                !data.contains("description"))
+                !data.contains("description") ||
+                !data.contains("fill") ||
+                !data.contains("garbageType"))
             {
                 res.status = 400;
 
@@ -947,7 +950,9 @@ server.Delete(R"(/api/trucks/([^/]+))",
             if (!data["citizen"].is_string() ||
                 !data["phone"].is_string() ||
                 !data["issue"].is_string() ||
-                !data["description"].is_string())
+                !data["description"].is_string() ||
+                !data["fill"].is_number() ||
+                !data["garbageType"].is_string())
             {
                 res.status = 400;
 
@@ -982,11 +987,18 @@ server.Delete(R"(/api/trucks/([^/]+))",
             string phone = data["phone"].get<string>();
             string issue = data["issue"].get<string>();
             string description = data["description"].get<string>();
+            float fill = data["fill"].get<float>();
+            string garbageType = data["garbageType"].get<string>();
 
             if (citizen.empty() ||
                 description.empty() ||
                 issue.empty() ||
-                phone.size() != 10)
+                binID.empty() ||
+                phone.size() != 10 ||
+                fill < 0 || fill > 100 ||
+                (garbageType != "Dry" &&
+                 garbageType != "Wet" &&
+                 garbageType != "Mixed"))
             {
                 res.status = 400;
 
@@ -998,12 +1010,14 @@ server.Delete(R"(/api/trucks/([^/]+))",
                 return;
             }
 
-            bool success = database.addComplaint(
+            bool success = database.addCitizenReport(
                 binID,
                 citizen,
                 phone,
                 issue,
-                description
+                description,
+                fill,
+                garbageType
             );
 
             json response;
@@ -1184,6 +1198,342 @@ server.Delete(R"(/api/trucks/([^/]+))",
     );
 
 
+
+    // ------------------------------------
+    // API 19: Get driver's active assignment
+    // GET /api/driver/D101/assignment
+    // ------------------------------------
+
+    server.Get(R"(/api/driver/([Dd])([0-9]+)/assignment)",
+        [&database](const httplib::Request& req,
+                    httplib::Response& res)
+        {
+            int requestedID = stoi(req.matches[2].str());
+
+            vector<Driver> drivers;
+            vector<Truck> trucks;
+            vector<Bin> bins;
+
+            if (!database.loadDrivers(drivers) ||
+                !database.loadTrucks(trucks) ||
+                !database.loadBins(bins) ||
+                !database.loadActiveAssignments(trucks))
+            {
+                res.status = 500;
+                res.set_content(
+                    R"({"success":false,"message":"Could not load driver assignment data"})",
+                    "application/json"
+                );
+                return;
+            }
+
+            Driver* selectedDriver = nullptr;
+
+            for (Driver& driver : drivers)
+            {
+                if (driver.getDriverID() == requestedID)
+                {
+                    selectedDriver = &driver;
+                    break;
+                }
+            }
+
+            if (selectedDriver == nullptr)
+            {
+                res.status = 404;
+                res.set_content(
+                    R"({"success":false,"message":"Driver not found"})",
+                    "application/json"
+                );
+                return;
+            }
+
+            Truck* selectedTruck = nullptr;
+
+            for (Truck& truck : trucks)
+            {
+                if (truck.getID() == selectedDriver->getTruckID())
+                {
+                    selectedTruck = &truck;
+                    break;
+                }
+            }
+
+            if (selectedTruck == nullptr)
+            {
+                res.status = 404;
+                res.set_content(
+                    R"({"success":false,"message":"No truck is linked to this driver"})",
+                    "application/json"
+                );
+                return;
+            }
+
+            json response;
+
+            response["success"] = true;
+            response["assigned"] =
+                !selectedTruck->getAssignedBinID().empty();
+
+            response["driver"] = {
+                {"id", "D" + to_string(selectedDriver->getDriverID())},
+                {"name", selectedDriver->getName()},
+                {"phone", selectedDriver->getPhoneNumber()}
+            };
+
+            response["truck"] = {
+                {"id", selectedTruck->getID()},
+                {"capacity", selectedTruck->getMaxCapacity()},
+                {"currentLoad", selectedTruck->getCurrentLoad()},
+                {"remainingCapacity", selectedTruck->getRemainingCapacity()},
+                {"currentLocation", selectedTruck->getCurrentLocation()},
+                {"status", selectedTruck->getStatus()}
+            };
+
+            if (response["assigned"].get<bool>())
+            {
+                string assignedBinID =
+                    selectedTruck->getAssignedBinID();
+
+                Bin* selectedBin = nullptr;
+
+                for (Bin& bin : bins)
+                {
+                    if (bin.getID() == assignedBinID)
+                    {
+                        selectedBin = &bin;
+                        break;
+                    }
+                }
+
+                if (selectedBin == nullptr)
+                {
+                    res.status = 500;
+                    res.set_content(
+                        R"({"success":false,"message":"Assigned bin was not found"})",
+                        "application/json"
+                    );
+                    return;
+                }
+
+                Graph graph;
+                initializeGraph(&graph, 4);
+
+                addEdge(&graph, 0, 1, 4);
+                addEdge(&graph, 0, 2, 2);
+                addEdge(&graph, 1, 2, 5);
+                addEdge(&graph, 1, 3, 3);
+                addEdge(&graph, 2, 3, 1);
+
+                int path[MAX_NODES];
+                int pathLength = 0;
+                int totalDistance = 0;
+
+                int routeFound = shortestPath(
+                    &graph,
+                    selectedTruck->getCurrentLocation(),
+                    selectedBin->getLocationNode(),
+                    path,
+                    &pathLength,
+                    &totalDistance
+                );
+
+                json route = json::array();
+
+                if (routeFound)
+                {
+                    for (int i = 0; i < pathLength; i++)
+                        route.push_back(path[i]);
+                }
+
+                freeGraph(&graph);
+
+                response["assignment"] = {
+                    {"binId", selectedBin->getID()},
+                    {"fill", selectedBin->getFillPercentage()},
+                    {"type", selectedBin->getGarbageType()},
+                    {"location", selectedBin->getLocation()},
+                    {"locationNode", selectedBin->getLocationNode()},
+                    {"estimatedGarbage", selectedBin->getEstimatedGarbage()},
+                    {"capacity", selectedBin->getMaxCapacityKg()},
+                    {"route", route},
+                    {"distanceKm", routeFound ? totalDistance : -1}
+                };
+            }
+            else
+            {
+                response["assignment"] = nullptr;
+            }
+
+            res.set_content(response.dump(4), "application/json");
+        }
+    );
+
+
+    // ------------------------------------
+
+    // API 20: Driver completes assigned collection
+    // POST /api/driver/D101/complete
+    server.Post(R"(/api/driver/([Dd])([0-9]+)/complete)",
+        [&database](const httplib::Request& req,
+                    httplib::Response& res)
+        {
+            int requestedID = stoi(req.matches[2].str());
+
+            vector<Driver> drivers;
+            vector<Truck> trucks;
+
+            if (!database.loadDrivers(drivers) ||
+                !database.loadTrucks(trucks) ||
+                !database.loadActiveAssignments(trucks))
+            {
+                res.status = 500;
+                res.set_content(
+                    R"({"success":false,"message":"Could not load driver data"})",
+                    "application/json");
+                return;
+            }
+
+            Driver* selectedDriver = nullptr;
+            for (Driver& driver : drivers)
+            {
+                if (driver.getDriverID() == requestedID)
+                {
+                    selectedDriver = &driver;
+                    break;
+                }
+            }
+
+            if (selectedDriver == nullptr)
+            {
+                res.status = 404;
+                res.set_content(
+                    R"({"success":false,"message":"Driver not found"})",
+                    "application/json");
+                return;
+            }
+
+            string truckID = selectedDriver->getTruckID();
+            string binID;
+
+            for (Truck& truck : trucks)
+            {
+                if (truck.getID() == truckID)
+                {
+                    binID = truck.getAssignedBinID();
+                    break;
+                }
+            }
+
+            if (binID.empty())
+            {
+                res.status = 409;
+                res.set_content(
+                    R"({"success":false,"message":"No active assignment for this driver"})",
+                    "application/json");
+                return;
+            }
+
+            Graph graph;
+            initializeGraph(&graph, 4);
+            addEdge(&graph, 0, 1, 4);
+            addEdge(&graph, 0, 2, 2);
+            addEdge(&graph, 1, 2, 5);
+            addEdge(&graph, 1, 3, 3);
+            addEdge(&graph, 2, 3, 1);
+
+            CollectionManager manager(&graph, &database);
+            vector<Depot> depots;
+
+            if (!manager.loadData() || !database.loadDepots(depots))
+            {
+                freeGraph(&graph);
+                res.status = 500;
+                res.set_content(
+                    R"({"success":false,"message":"Could not load collection data"})",
+                    "application/json");
+                return;
+            }
+
+            for (Depot& depot : depots)
+                manager.addDepot(depot);
+
+            bool completed = manager.completeCollection(binID);
+            freeGraph(&graph);
+
+            if (!completed)
+            {
+                res.status = 409;
+                res.set_content(
+                    R"({"success":false,"message":"Collection failed. Check assignment and truck capacity."})",
+                    "application/json");
+                return;
+            }
+
+            json response;
+            response["success"] = true;
+            response["binId"] = binID;
+            response["truckId"] = truckID;
+            response["message"] = "Collection recorded successfully.";
+
+            res.set_content(response.dump(4), "application/json");
+        }
+    );
+
+
+    // API 21: Run smart collection optimizer
+
+    // POST /api/optimize
+    // ------------------------------------
+
+    server.Post("/api/optimize",
+        [&database](const httplib::Request& req,
+                    httplib::Response& res)
+        {
+            Graph graph;
+            initializeGraph(&graph, 4);
+
+            addEdge(&graph, 0, 1, 4);
+            addEdge(&graph, 0, 2, 2);
+            addEdge(&graph, 1, 2, 5);
+            addEdge(&graph, 1, 3, 3);
+            addEdge(&graph, 2, 3, 1);
+
+            CollectionManager manager(&graph, &database);
+
+            vector<Depot> depots;
+
+            if (!manager.loadData() ||
+                !database.loadDepots(depots))
+            {
+                freeGraph(&graph);
+                res.status = 500;
+                res.set_content(
+                    R"({"success":false,"message":"Could not load optimization data"})",
+                    "application/json"
+                );
+                return;
+            }
+
+            for (Depot& depot : depots)
+                manager.addDepot(depot);
+
+            int assignmentsCreated = manager.optimizeCollection();
+
+            freeGraph(&graph);
+
+            json response;
+
+            response["success"] = true;
+            response["assignmentsCreated"] = assignmentsCreated;
+            response["message"] = assignmentsCreated > 0
+                ? "New bin assignments created successfully."
+                : "No new eligible bins. Existing assignments were preserved.";
+
+            res.set_content(response.dump(4), "application/json");
+        }
+    );
+
     // Start server
     cout << "\nSmartWaste API started successfully!\n";
     cout << "Server address: http://localhost:8080\n";
@@ -1203,6 +1553,9 @@ server.Delete(R"(/api/trucks/([^/]+))",
     cout << "PUT /api/complaints/{id}\n";
     cout << "DELETE /api/complaints/{id}\n";
     cout << "GET /api/collections\n";
+    cout << "GET /api/driver/{id}/assignment\n";
+    cout << "POST /api/driver/{id}/complete\n";
+    cout << "POST /api/optimize\n";
 
     cout << "\nPress Ctrl + C to stop the server.\n";
 

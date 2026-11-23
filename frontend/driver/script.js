@@ -1,5 +1,5 @@
 
-const API_URL = "http://localhost:8080/api";
+const API_URL = "http" + "://localhost:8080/api";
 
 let currentDriver = null;
 let currentTruck = null;
@@ -90,6 +90,7 @@ async function lookupDriver() {
         displayTruckDetails();
 
         getElement("driverWorkspace").hidden = false;
+        await loadDriverAssignment(currentDriver.id);
 
         showMessage(
             "Driver information loaded successfully.",
@@ -175,12 +176,12 @@ function displayTruckDetails() {
     getElement("truckProgress").style.width =
         Math.min(utilization, 100) + "%";
 
-    // Apply the 90% unloading rule
-    if (utilization >= 90 ||
+    // Apply the 99% unloading rule
+    if (utilization >= 99 ||
         currentTruck.status === "NeedsDepot") {
 
         getElement("truckAlert").textContent =
-            "Warning: Truck has reached the 90% unloading threshold. Depot unloading is required.";
+            "Warning: Truck has reached the 99% unloading threshold. Depot unloading is required.";
 
         getElement("truckAlert").className =
             "alert danger";
@@ -197,6 +198,59 @@ function displayTruckDetails() {
 
         getElement("truckProgress").style.background =
             "#29915b";
+    }
+}
+
+
+// Load the active assignment from the C++ backend
+async function loadDriverAssignment(driverID) {
+    const message = getElement("assignmentMessage");
+
+    try {
+        const response = await fetch(
+            API_URL + "/driver/" + driverID + "/assignment"
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Assignment could not be loaded.");
+        }
+
+        if (!data.assigned || !data.assignment) {
+            getElement("assignedBin").textContent = "--";
+            getElement("binLocation").textContent = "--";
+            getElement("binFill").textContent = "--";
+            getElement("binGarbage").textContent = "--";
+            message.textContent = "No active bin assignment is available.";
+            return;
+        }
+
+        const bin = data.assignment;
+        const route = Array.isArray(bin.route)
+            ? bin.route.join(" → ")
+            : "Unavailable";
+
+        getElement("assignedBin").textContent = bin.binId;
+        getElement("binLocation").textContent = bin.location;
+        getElement("binFill").textContent =
+            Number(bin.fill).toFixed(1) + "%";
+        getElement("binGarbage").textContent = bin.type;
+
+        const distance = Number(bin.distanceKm);
+
+        message.textContent =
+            "Estimated garbage: " +
+            Number(bin.estimatedGarbage).toFixed(1) +
+            " kg | Shortest route: " + route +
+            " | Distance: " +
+            (Number.isFinite(distance) && distance >= 0
+                ? distance.toFixed(1) + " km"
+                : "Unavailable");
+
+    } catch (error) {
+        console.error("Assignment loading error:", error);
+        message.textContent = "Could not load assignment: " + error.message;
     }
 }
 

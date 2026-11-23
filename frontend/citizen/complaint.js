@@ -1,5 +1,6 @@
 
-const API_URL = "http://localhost:8080/api";
+const API_URL = "http" + "://localhost:8080/api";
+
 
 const complaintForm = document.getElementById("complaintForm");
 const complaintMessage = document.getElementById("complaintMessage");
@@ -11,6 +12,8 @@ complaintForm.addEventListener("submit", async function (event) {
     const phone = document.getElementById("citizenPhone").value.trim();
     const binId = document.getElementById("binId").value.trim().toUpperCase();
     const issue = document.getElementById("issueType").value;
+    const fill = Number(document.getElementById("fillPercentage").value);
+    const garbageType = document.getElementById("garbageType").value;
     const description = document.getElementById("description").value.trim();
 
     if (!/^[0-9]{10}$/.test(phone)) {
@@ -18,7 +21,8 @@ complaintForm.addEventListener("submit", async function (event) {
         return;
     }
 
-    if (!citizen || !binId || !issue || !description) {
+    if (!citizen || !binId || !issue || !description ||
+        !garbageType || !Number.isFinite(fill) || fill < 0 || fill > 100) {
         showMessage("Please fill in all complaint details.", "error");
         return;
     }
@@ -28,7 +32,9 @@ complaintForm.addEventListener("submit", async function (event) {
         phone: phone,
         binId: binId,
         issue: issue,
-        description: description
+        description: description,
+        fill: fill,
+        garbageType: garbageType
     };
 
     const submitButton = complaintForm.querySelector("button[type='submit']");
